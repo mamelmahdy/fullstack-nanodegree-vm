@@ -1,0 +1,30 @@
+<div class="row top-menu">
+	<div class="col-md-6">
+		<a href="{{url_for('showBikes')}}">
+			<button class="btn btn-default">
+				<span class="glyphicon glyphicon-home" aria-hidden="true"></span>Show All Bikes
+			</button>
+		</a>
+	</div>
+	<div class="col-md-6 text-right">
+		<div class = 'flash'>
+							{% with messages = get_flashed_messages() %}
+					{% if messages %}
+
+						<ul>
+						{% for message in messages %}
+								<li> <strong> {{ message }} </strong> </li>
+						{% endfor %}
+						</ul>
+						{% endif %}
+				{% endwith %}
+
+		</div>
+		<a href="{{url_for('showLogin')}}">
+			<button class="btn btn-default">
+				<span class="glyphicon glyphicon-user" aria-hidden="true"></span>Change User
+			</button>
+		</a>
+
+	</div>
+</div>

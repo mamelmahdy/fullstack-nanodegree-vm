@@ -1,0 +1,13 @@
+{% extends "main.html" %}
+{% block content %}
+<div class="text-center" style="width:50%; margin:auto;">
+  <form class="form-signin"  role="form" method="post" action="/signup">
+    <img class="img-fluid" src="static/login-banner.jpg" alt="" width="600" height="200">
+    <h1 class="h3 mb-3 font-weight-normal">Welcome to the Bike Depot</h1>
+    <h2 class="h3 mb-3 font-weight-normal">Please signup below.</h2>
+    <input id="login-username" type="text" class="form-control" name="user_name" value="" placeholder="username">
+    <input id="login-email" type="email" class="form-control" name="email" placeholder="email">
+    <input id="login-password" type="password" class="form-control" name="password" placeholder="password">
+    <button class="btn btn-lg btn-primary btn-block" type="submit">Signup</button>
+  </form>
+  {% endblock %}
