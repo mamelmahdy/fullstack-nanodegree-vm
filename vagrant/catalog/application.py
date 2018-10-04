@@ -40,12 +40,12 @@ def showLogin():
         login_session['username'] = request.form['user_name']
         login_session['password'] = request.form['password']
         user_id = checkUserLogin(login_session)
-        if not user_id:
-            msg = "No account found. Please Signup."
-            return redirect(url_for('showLogin', message=msg))
+        print user_id
+        if 'user_id' not in login_session:
+            msg = "No account found. Please Signup or Sign in with options below."
+            return render_template('login.html', messages=msg)
         else:
             print "User %s logged in" % user_id.id
-            login_session['user_id'] = user_id.id
             flash("Now logged in as %s" % login_session['username'])
             return redirect(url_for('showBikes'))
 
@@ -254,6 +254,7 @@ def checkUserLogin(login_session):
     session = DBSession()
     user = session.query(User).filter_by(name=login_session['username'],
                                     password=login_session['password']).one()
+    login_session['user_id'] = user.id
     return user
 
 def getUserInfo(user_id):
@@ -321,7 +322,7 @@ def BikesJSON():
 # Show all Bikes
 @app.route('/')
 @app.route('/Bike')
-def showBikes():
+def showBikes(methods=['GET', 'POST']):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     Bikes = session.query(Bike).order_by(asc(Bike.name))
@@ -331,13 +332,15 @@ def showBikes():
         return render_template('Bikes.html', Bikes=Bikes)
 
 # Create a new Bike
-@app.route('/Bike/new/', methods=['GET', 'POST'])
+@app.route('/Bike/new', methods=['GET', 'POST'])
 def newBike():
     if 'username' not in login_session:
         return redirect('/login')
     if request.method == 'POST':
         newBike = Bike(
-            name=request.form['name'], user_id=login_session['username'])
+            name=request.form['name'], user_id=login_session['user_id'],
+            description=request.form['description'], price=request.form['price'],
+            manufacturer=request.form['manufacturer'])
         session.add(newBike)
         flash('New Bike %s Successfully Created' % newBike.name)
         session.commit()
@@ -346,7 +349,7 @@ def newBike():
         return render_template('newBike.html')
 
 # Edit a Bike
-@app.route('/Bike/<int:Bike_id>/edit/', methods=['GET', 'POST'])
+@app.route('/Bike/<int:Bike_id>/edit', methods=['GET', 'POST'])
 def editBike(Bike_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
@@ -359,6 +362,10 @@ def editBike(Bike_id):
     if request.method == 'POST':
         if request.form['name']:
             editedBike.name = request.form['name']
+            editedBike.description = request.form['description']
+            editedBike.price = request.form['price']
+            session.query(Bike).filter_by(id=Bike_id).update({'description':editedBike.description})
+            session.commit()
             flash('Bike Successfully Edited %s' % editedBike.name)
             return redirect(url_for('showBikes'))
     else:
@@ -366,7 +373,7 @@ def editBike(Bike_id):
 
 
 # Delete a Bike
-@app.route('/Bike/<int:Bike_id>/delete/', methods=['GET', 'POST'])
+@app.route('/Bike/<int:Bike_id>/delete', methods=['GET', 'POST'])
 def deleteBike(Bike_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
@@ -385,15 +392,14 @@ def deleteBike(Bike_id):
         return render_template('deleteBike.html', Bike=BikeToDelete)
 
 # Show a Bike BikePart
-@app.route('/Bike/<int:Bike_id>/')
+@app.route('/Bike/<int:Bike_id>')
 @app.route('/Bike/<int:Bike_id>/BikePart/')
 def showBikePart(Bike_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     bike = session.query(Bike).filter_by(id=Bike_id).one()
-    creator = getUserInfo(Bike.user_id)
-    items = session.query(BikePart).filter_by(
-        id=Bike_id).all()
+    creator = getUserInfo(bike.user_id)
+    items = session.query(BikePart).filter_by(bike_id=Bike_id).all()
     if 'username' not in login_session or creator.id != login_session['user_id']:
         return render_template('publicBikePart.html', items=items, Bike=bike, creator=creator)
     else:
@@ -401,53 +407,51 @@ def showBikePart(Bike_id):
 
 
 # Create a new BikePart item
-@app.route('/Bike/<int:Bike_id>/BikePart/new/', methods=['GET', 'POST'])
+@app.route('/Bike/<int:Bike_id>/BikePart/new', methods=['GET', 'POST'])
 def newBikePart(Bike_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     if 'username' not in login_session:
         return redirect('/login')
-    Bike = session.query(Bike).filter_by(id=Bike_id).one()
-    if login_session['user_id'] != Bike.user_id:
+    bike = session.query(Bike).filter_by(id=Bike_id).one()
+    if login_session['user_id'] != bike.user_id:
         return "<script>function myFunction() {alert('You are not authorized to add BikePart items to this Bike. Please create your own Bike in order to add items.');}</script><body onload='myFunction()'>"
-        if request.method == 'POST':
-            newItem = BikePart(name=request.form['name'], description=request.form['description'], price=request.form[
-                               'price'], course=request.form['course'], Bike_id=Bike_id, user_id=Bike.user_id)
-            session.add(newItem)
-            session.commit()
-            flash('New BikePart %s Item Successfully Created' % (newItem.name))
-            return redirect(url_for('showBikePart', Bike_id=Bike_id))
+    if request.method == 'POST':
+        user = session.query(User).filter_by(id=bike.user_id).one()
+        newItem = BikePart(name=request.form['name'], description=request.form['description'],
+                            type=request.form['type'], bike_id=Bike_id, user_id=bike.user_id)
+        session.add(newItem)
+        session.commit()
+        flash('New BikePart %s Item Successfully Created' % (newItem.name))
+        return redirect(url_for('showBikePart', Bike_id=Bike_id, User=user))
     else:
         return render_template('newBikePart.html', Bike_id=Bike_id)
 
 # Edit a BikePart item
-
-
 @app.route('/Bike/<int:Bike_id>/BikePart/<int:BikePart_id>/edit', methods=['GET', 'POST'])
-def editBikePart(Bike_id, BikePart_id):
+def editBikePart(Bike_id, BikePart_id, methods=['GET', 'POST']):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     if 'username' not in login_session:
         return redirect('/login')
     editedItem = session.query(BikePart).filter_by(id=BikePart_id).one()
-    Bike = session.query(Bike).filter_by(id=Bike_id).one()
-    if login_session['user_id'] != Bike.user_id:
+    print Bike_id
+    bike = session.query(Bike).filter_by(id=Bike_id).one()
+    if login_session['user_id'] != bike.user_id:
         return "<script>function myFunction() {alert('You are not authorized to edit BikePart items to this Bike. Please create your own Bike in order to edit items.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         if request.form['name']:
             editedItem.name = request.form['name']
         if request.form['description']:
             editedItem.description = request.form['description']
-        if request.form['price']:
-            editedItem.price = request.form['price']
-        if request.form['course']:
-            editedItem.course = request.form['course']
+        if request.form['type']:
+            editedItem.price = request.form['type']
         session.add(editedItem)
         session.commit()
         flash('BikePart Item Successfully Edited')
         return redirect(url_for('showBikePart', Bike_id=Bike_id))
     else:
-        return render_template('editBikePart.html', Bike_id=Bike_id, BikePart_id=BikePart_id, item=editedItem)
+        return render_template('editBikePart.html', Bike_id=Bike_id, item=editedItem)
 
 
 # Delete a BikePart item

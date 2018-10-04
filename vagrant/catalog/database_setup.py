@@ -40,12 +40,12 @@ class Bike(Base):
 
 
 class BikePart(Base):
-    __tablename__ = 'menu_item'
+    __tablename__ = 'bikePart'
 
     name = Column(String(80), nullable=False)
     id = Column(Integer, primary_key=True)
     description = Column(String(250))
-    manufacturer = Column(String(250))
+    type = Column(String(250))
     bike_id = Column(Integer, ForeignKey('bike.id'))
     bike = relationship(Bike)
     user_id = Column(Integer, ForeignKey('user.id'))

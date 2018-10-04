@@ -6,7 +6,7 @@
 h1 {
 	font-family: "Helvetica Neue Light", Roboto, Helvetica, Arial, sans-serif;
 	font-size: 50px;
-	color: #51453B;
+	color: #000000;
 	line-height: 60px;
 	font-weight: 300;
 }
@@ -110,7 +110,7 @@ h3 {
 }
 .banner.menu {
 	height: 150px;
-	background-color: #000000;
+	background-color: #551a8b;
 }
 .banner.profile {
 	height: 150px;
@@ -153,7 +153,7 @@ u }
 	margin-top: -20px;
 }
 .flash {
-	background-color: #98FB98;
+	background-color: #551a8b;
 	width:100%;
 	text-decoration: none;
 

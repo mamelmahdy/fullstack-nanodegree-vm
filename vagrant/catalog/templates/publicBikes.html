@@ -32,22 +32,28 @@
 
 
 
-	<div class="row padding-top padding-bottom">
-		<div class="col-md-1"></div>
-		<div class="col-md-10 padding-none">
-
-		</div>
-		<div class="col-md-1"></div>
-	</div>
-	{% for restaurant in restaurants %}
-		<a href = "{{url_for('showBikes', restaurant_id = restaurant.id)}}">
-			<div class="row">
-				<div class="col-md-1"></div>
-					<div class="col-md-10 restaurant-list">
-						<h3>{{restaurant.name}}</h3>
-					</div>
-				<div class="col-md-1"></div>
-			</div>
+<div class="row padding-top padding-bottom">
+	<div class="col-md-1"></div>
+	<div class="col-md-10 padding-none">
+		<a href="{{url_for('newBike')}}">
+			<button class="btn btn-default" id="new-restaurant">
+				<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Add Bike
+			</button>
 		</a>
-	{% endfor %}
+	</div>
+	<div class="col-md-1"></div>
+</div>
+{% for Bike in Bikes %}
+	<a href = "{{url_for('showBikePart', Bike_id = Bike.id)}}">
+		<div class="row">
+			<div class="col-md-1"></div>
+				<div class="col-md-10 restaurant-list">
+					<h3>{{Bike.name}}</h3>
+					<h5>{{Bike.price}}</h5>
+					<p>{{Bike.description}}</p>
+				</div>
+			<div class="col-md-1"></div>
+		</div>
+	</a>
+{% endfor %}
 {% endblock %}
