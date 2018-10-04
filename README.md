@@ -23,7 +23,7 @@ git clone https://github.com/mamelmahdy/fullstack-nanodegree-vm.git
 First setup the linux-based virtual machine [Vagrant](https://www.vagrantup.com/)
 and [VirtualBox](https://www.virtualbox.org/wiki/Download_Old_Builds_5_1)
 
-You will need to bring the vagrant machine up and ssh into it, so in a terminal
+You will need to bring the vagrant machine up and SSH into it, so in a terminal
 or git bash within the vagrant folder of the project directory run as follows
 
 ```
@@ -37,7 +37,7 @@ Once in the vagrant machine, make sure that Vagrant has Python already installed
 python3 --version
 ```
 
-The project folder containing the web application files can be accesded in the vargant VM by running.
+The project folder containing the web application files can be accessed in the vargant VM by running.
 
 ```
 cd /vagrant/catalog
@@ -57,7 +57,7 @@ sudo pip install oauth2client
 
 The project requires Bike and Bike Part database found in the project directory 'bike.db'.
 
-If you wish to start witih a new database. Delete the database file 'bike.db' and use the database
+If you wish to start with a new database. Delete the database file 'bike.db' and use the database
 setup python file to make a new database file in the project directory.
 
 ```
