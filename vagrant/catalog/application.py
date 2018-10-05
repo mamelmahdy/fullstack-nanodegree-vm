@@ -9,7 +9,7 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
 import json
-from flask import make_response
+from flask import make_response, session as Fsession
 import requests
 
 app = Flask(__name__)
@@ -37,17 +37,25 @@ def showLogin():
         # return "The current session state is %s" % login_session['state']
         return render_template('login.html', STATE=state)
     if request.method == 'POST':
+        if request.form['user_name'] == '' or request.form['password'] == '':
+            msg = "Login invalid, please try again or signup or sign in with options below."
+            return render_template('login.html', messages=msg)
         login_session['username'] = request.form['user_name']
         login_session['password'] = request.form['password']
-        user_id = checkUserLogin(login_session)
-        print user_id
-        if 'user_id' not in login_session:
+        login_session['user_id'] = checkUserLogin(login_session)
+        print login_session
+        if login_session['user_id'] == '':
             msg = "No account found. Please Signup or Sign in with options below."
             return render_template('login.html', messages=msg)
         else:
-            print "User %s logged in" % user_id.id
             flash("Now logged in as %s" % login_session['username'])
             return redirect(url_for('showBikes'))
+@app.route('/logout')
+def showLogout():
+    Fsession.clear()
+    Fsession.pop('token', None)
+    [Fsession.pop(key) for key in list(Fsession.keys())]
+    return render_template('login.html', messages='Logged out.')
 
 @app.route('/signup', methods=['GET', 'POST'])
 def showSignup():
@@ -252,10 +260,14 @@ def createUser(login_session):
 def checkUserLogin(login_session):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    user = session.query(User).filter_by(name=login_session['username'],
-                                    password=login_session['password']).one()
-    login_session['user_id'] = user.id
-    return user
+    try:
+        user = session.query(User).filter_by(name=login_session['username'],
+                                        password=login_session['password']).one()
+        return user.id
+    except:
+        msg = "No account found. Please Signup or Sign in with options below."
+        return render_template('login.html', messages=msg)
+
 
 def getUserInfo(user_id):
     DBSession = sessionmaker(bind=engine)
@@ -301,22 +313,18 @@ def gdisconnect():
 # JSON APIs to view Bike Information
 @app.route('/Bike/<int:Bike_id>/BikePart/JSON')
 def BikeBikePartJSON(Bike_id):
-    Bike = session.query(Bike).filter_by(id=Bike_id).one()
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
     items = session.query(BikePart).filter_by(
-        Bike_id=Bike_id).all()
-    return jsonify(BikePart=[i.serialize for i in items])
-
-
-@app.route('/Bike/<int:Bike_id>/BikePart/<int:BikePart_id>/JSON')
-def BikePartJSON(Bike_id, BikePart_id):
-    BikePart_Item = session.query(BikePart).filter_by(id=BikePart_id).one()
-    return jsonify(BikePart_Item=BikePart_Item.serialize)
-
+        bike_id=Bike_id).all()
+    return jsonify(items=[i.serialize for i in items])
 
 @app.route('/Bike/JSON')
 def BikesJSON():
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
     Bikes = session.query(Bike).all()
-    return jsonify(Bikes=[r.serialize for r in Bikes])
+    return jsonify(Bikes=[b.serialize for b in Bikes])
 
 
 # Show all Bikes

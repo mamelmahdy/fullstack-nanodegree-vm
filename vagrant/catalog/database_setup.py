@@ -57,7 +57,7 @@ class BikePart(Base):
         return {
             'name': self.name,
             'description': self.description,
-            'manufacturer': self.manufacturer,
+            'type': self.type,
             'id': self.id
         }
 
