@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
+from flask import Flask, render_template, request, redirect, jsonify
+from flask import url_for, flash
 from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Bike, BikePart, User
@@ -17,7 +18,6 @@ app = Flask(__name__)
 CLIENT_ID = json.loads(
     open('client_secrets.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Bike Shop Application"
-
 
 # Connect to Database and create database session
 engine = create_engine('sqlite:///bike.db')
@@ -38,24 +38,29 @@ def showLogin():
         return render_template('login.html', STATE=state)
     if request.method == 'POST':
         if request.form['user_name'] == '' or request.form['password'] == '':
-            msg = "Login invalid, please try again or signup or sign in with options below."
+            msg = "Login invalid, please try again or signup or sign in with "
+            msg += "options below."
             return render_template('login.html', messages=msg)
         login_session['username'] = request.form['user_name']
         login_session['password'] = request.form['password']
         login_session['user_id'] = checkUserLogin(login_session)
         print login_session
         if login_session['user_id'] == '':
-            msg = "No account found. Please Signup or Sign in with options below."
+            msg = "No account found. Please Signup or Sign in with options "
+            msg += "below."
             return render_template('login.html', messages=msg)
         else:
             flash("Now logged in as %s" % login_session['username'])
             return redirect(url_for('showBikes'))
+
+
 @app.route('/logout')
 def showLogout():
     Fsession.clear()
     Fsession.pop('token', None)
     [Fsession.pop(key) for key in list(Fsession.keys())]
     return render_template('login.html', messages='Logged out.')
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def showSignup():
@@ -70,6 +75,7 @@ def showSignup():
         login_session['user_id'] = user_id
         return redirect(url_for('showBikes'))
 
+
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
     if request.args.get('state') != login_session['state']:
@@ -78,30 +84,21 @@ def fbconnect():
         return response
     access_token = request.data
     print "access token received %s " % access_token
-
-
     app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
         'web']['app_id']
     app_secret = json.loads(
         open('fb_client_secrets.json', 'r').read())['web']['app_secret']
-    url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
+    url = 'https://graph.facebook.com/oauth/access_token?grant_type='
+    url += 'fb_exchange'
+    url += '_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
         app_id, app_secret, access_token)
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
-
-
     # Use token to get user info from API
     userinfo_url = "https://graph.facebook.com/v2.8/me"
-    '''
-        Due to the formatting for the result from the server token exchange we have to
-        split the token first on commas and select the first index which gives us the key : value
-        for the server access token then we split it on colons to pull out the actual token value
-        and replace the remaining quotes with nothing so that it can be used directly in the graph
-        api calls
-    '''
     token = result.split(',')[0].split(':')[1].replace('"', '')
-
-    url = 'https://graph.facebook.com/v2.8/me?access_token=%s&fields=name,id,email' % token
+    url = 'https://graph.facebook.com/v2.8/me?access_token='
+    url += '%s&fields=name,id,email' % token
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
     # print "url sent for API access:%s"% url
@@ -116,7 +113,8 @@ def fbconnect():
     login_session['access_token'] = token
 
     # Get user picture
-    url = 'https://graph.facebook.com/v2.8/me/picture?access_token=%s&redirect=0&height=200&width=200' % token
+    url = 'https://graph.facebook.com/v2.8/me/picture?access_token='
+    url += '%s&redirect=0&height=200&width=200' % token
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
     data = json.loads(result)
@@ -136,7 +134,8 @@ def fbconnect():
     output += '!</h1>'
     output += '<img src="'
     output += login_session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;'
+    output += '-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
 
     flash("Now logged in as %s" % login_session['username'])
     return output
@@ -147,7 +146,8 @@ def fbdisconnect():
     facebook_id = login_session['facebook_id']
     # The access token must me included to successfully logout
     access_token = login_session['access_token']
-    url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id,access_token)
+    url = 'https://graph.facebook.com/%s/permissions?access_token='
+    url += '%s' % (facebook_id, access_token)
     h = httplib2.Http()
     result = h.request(url, 'DELETE')[1]
     return "you have been logged out"
@@ -205,8 +205,8 @@ def gconnect():
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
-                                 200)
+        response = make_response(json.dumps(
+                                    'Current user is already connected.'), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -239,7 +239,8 @@ def gconnect():
     output += '!</h1>'
     output += '<img src="'
     output += login_session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;'
+    output += '-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
     flash("you are now logged in as %s" % login_session['username'])
     print "done!"
     return output
@@ -257,12 +258,14 @@ def createUser(login_session):
     user = session.query(User).filter_by(email=login_session['email']).one()
     return user.id
 
+
 def checkUserLogin(login_session):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     try:
         user = session.query(User).filter_by(name=login_session['username'],
-                                        password=login_session['password']).one()
+                                             password=login_session['pass\
+                                             word']).one()
         return user.id
     except:
         msg = "No account found. Please Signup or Sign in with options below."
@@ -285,9 +288,8 @@ def getUserID(email):
     except:
         return None
 
+
 # DISCONNECT - Revoke a current user's token and reset their login_session
-
-
 @app.route('/gdisconnect')
 def gdisconnect():
     # Only disconnect a connected user.
@@ -305,7 +307,8 @@ def gdisconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
     else:
-        response = make_response(json.dumps('Failed to revoke token for given user.', 400))
+        response = make_response(json.dumps('Failed to revoke token for given \
+                                                user.', 400))
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -318,6 +321,7 @@ def BikeBikePartJSON(Bike_id):
     items = session.query(BikePart).filter_by(
         bike_id=Bike_id).all()
     return jsonify(items=[i.serialize for i in items])
+
 
 @app.route('/Bike/JSON')
 def BikesJSON():
@@ -339,6 +343,7 @@ def showBikes(methods=['GET', 'POST']):
     else:
         return render_template('Bikes.html', Bikes=Bikes)
 
+
 # Create a new Bike
 @app.route('/Bike/new', methods=['GET', 'POST'])
 def newBike():
@@ -347,7 +352,8 @@ def newBike():
     if request.method == 'POST':
         newBike = Bike(
             name=request.form['name'], user_id=login_session['user_id'],
-            description=request.form['description'], price=request.form['price'],
+            description=request.form['description'],
+            price=request.form['price'],
             manufacturer=request.form['manufacturer'])
         session.add(newBike)
         flash('New Bike %s Successfully Created' % newBike.name)
@@ -355,6 +361,7 @@ def newBike():
         return redirect(url_for('showBikes'))
     else:
         return render_template('newBike.html')
+
 
 # Edit a Bike
 @app.route('/Bike/<int:Bike_id>/edit', methods=['GET', 'POST'])
@@ -366,13 +373,16 @@ def editBike(Bike_id):
     if 'username' not in login_session:
         return redirect('/login')
     if editedBike.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit this Bike. Please create your own Bike in order to edit.');}</script><body onload='myFunction()'>"
+        return "<script>function myFunction() {alert('You are not authorized \
+                    to edit this Bike. Please create your own Bike in order \
+                    to edit.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         if request.form['name']:
             editedBike.name = request.form['name']
             editedBike.description = request.form['description']
             editedBike.price = request.form['price']
-            session.query(Bike).filter_by(id=Bike_id).update({'description':editedBike.description})
+            session.query(Bike).filter_by(id=Bike_id).update({
+                                        'description': editedBike.description})
             session.commit()
             flash('Bike Successfully Edited %s' % editedBike.name)
             return redirect(url_for('showBikes'))
@@ -390,7 +400,9 @@ def deleteBike(Bike_id):
     if 'username' not in login_session:
         return redirect('/login')
     if BikeToDelete.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to delete this Bike. Please create your own Bike in order to delete.');}</script><body onload='myFunction()'>"
+        return "<script>function myFunction() {alert('You are not authorized \
+                to delete this Bike. Please create your own Bike in order to \
+                delete.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         session.delete(BikeToDelete)
         flash('%s Successfully Deleted' % BikeToDelete.name)
@@ -398,6 +410,7 @@ def deleteBike(Bike_id):
         return redirect(url_for('showBikes', Bike_id=Bike_id))
     else:
         return render_template('deleteBike.html', Bike=BikeToDelete)
+
 
 # Show a Bike BikePart
 @app.route('/Bike/<int:Bike_id>')
@@ -408,10 +421,13 @@ def showBikePart(Bike_id):
     bike = session.query(Bike).filter_by(id=Bike_id).one()
     creator = getUserInfo(bike.user_id)
     items = session.query(BikePart).filter_by(bike_id=Bike_id).all()
-    if 'username' not in login_session or creator.id != login_session['user_id']:
-        return render_template('publicBikePart.html', items=items, Bike=bike, creator=creator)
+    if 'username' not in login_session or creator.id != \
+            login_session['user_id']:
+        return render_template('publicBikePart.html', items=items, Bike=bike,
+                               creator=creator)
     else:
-        return render_template('BikePart.html', items=items, Bike=bike, creator=creator)
+        return render_template('BikePart.html', items=items, Bike=bike,
+                               creator=creator)
 
 
 # Create a new BikePart item
@@ -423,11 +439,16 @@ def newBikePart(Bike_id):
         return redirect('/login')
     bike = session.query(Bike).filter_by(id=Bike_id).one()
     if login_session['user_id'] != bike.user_id:
-        return "<script>function myFunction() {alert('You are not authorized to add BikePart items to this Bike. Please create your own Bike in order to add items.');}</script><body onload='myFunction()'>"
+        return "<script>function myFunction() {alert('You are not authorized \
+                to add BikePart items to this Bike. Please create your own \
+                Bike in order to add items.');}</script><body \
+                onload='myFunction()'>"
     if request.method == 'POST':
         user = session.query(User).filter_by(id=bike.user_id).one()
-        newItem = BikePart(name=request.form['name'], description=request.form['description'],
-                            type=request.form['type'], bike_id=Bike_id, user_id=bike.user_id)
+        newItem = BikePart(name=request.form['name'],
+                           description=request.form['description'],
+                           type=request.form['type'],
+                           bike_id=Bike_id, user_id=bike.user_id)
         session.add(newItem)
         session.commit()
         flash('New BikePart %s Item Successfully Created' % (newItem.name))
@@ -435,8 +456,10 @@ def newBikePart(Bike_id):
     else:
         return render_template('newBikePart.html', Bike_id=Bike_id)
 
+
 # Edit a BikePart item
-@app.route('/Bike/<int:Bike_id>/BikePart/<int:BikePart_id>/edit', methods=['GET', 'POST'])
+@app.route('/Bike/<int:Bike_id>/BikePart/<int:BikePart_id>/edit',
+           methods=['GET', 'POST'])
 def editBikePart(Bike_id, BikePart_id, methods=['GET', 'POST']):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
@@ -446,7 +469,10 @@ def editBikePart(Bike_id, BikePart_id, methods=['GET', 'POST']):
     print Bike_id
     bike = session.query(Bike).filter_by(id=Bike_id).one()
     if login_session['user_id'] != bike.user_id:
-        return "<script>function myFunction() {alert('You are not authorized to edit BikePart items to this Bike. Please create your own Bike in order to edit items.');}</script><body onload='myFunction()'>"
+        return "<script>function myFunction() {alert('You are not authorized \
+                to edit BikePart items to this Bike. Please create your own \
+                Bike in order to edit items.');}</script><body \
+                onload='myFunction()'>"
     if request.method == 'POST':
         if request.form['name']:
             editedItem.name = request.form['name']
@@ -459,11 +485,13 @@ def editBikePart(Bike_id, BikePart_id, methods=['GET', 'POST']):
         flash('BikePart Item Successfully Edited')
         return redirect(url_for('showBikePart', Bike_id=Bike_id))
     else:
-        return render_template('editBikePart.html', Bike_id=Bike_id, item=editedItem)
+        return render_template('editBikePart.html', Bike_id=Bike_id,
+                               item=editedItem)
 
 
 # Delete a BikePart item
-@app.route('/Bike/<int:Bike_id>/BikePart/<int:BikePart_id>/delete', methods=['GET', 'POST'])
+@app.route('/Bike/<int:Bike_id>/BikePart/<int:BikePart_id>/delete',
+           methods=['GET', 'POST'])
 def deleteBikePart(Bike_id, BikePart_id):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
@@ -472,7 +500,10 @@ def deleteBikePart(Bike_id, BikePart_id):
     Bike = session.query(Bike).filter_by(id=Bike_id).one()
     itemToDelete = session.query(BikePart).filter_by(id=BikePart_id).one()
     if login_session['user_id'] != Bike.user_id:
-        return "<script>function myFunction() {alert('You are not authorized to delete BikePart items to this Bike. Please create your own Bike in order to delete items.');}</script><body onload='myFunction()'>"
+        return "<script>function myFunction() {alert('You are not authorized \
+                to delete BikePart items to this Bike. Please create your own \
+                Bike in order to delete items.');}</script><body \
+                onload='myFunction()'>"
     if request.method == 'POST':
         session.delete(itemToDelete)
         session.commit()
